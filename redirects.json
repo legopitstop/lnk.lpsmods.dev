@@ -27,8 +27,8 @@
   "stackoverflow": "https://stackoverflow.com/users/23580225/legopitstop",
   "minecraftwiki,mcwiki": "https://minecraft.wiki",
   "morefoodwiki,lmfwiki": "https://more-food.fandom.com",
-  "lmf,lmfdp": "https://www.curseforge.com/minecraft/customization/lots-more-food-datapack",
-  "lmfbe,lmfpe": "https://www.curseforge.com/minecraft-bedrock/addons/morefood",
+  "lmfdp": "https://www.curseforge.com/minecraft/customization/lots-more-food-datapack",
+  "lmf,lmfbe,lmfpe": "https://www.curseforge.com/minecraft-bedrock/addons/morefood",
   "legacy": "https://legopitstop.weebly.com",
   "hire,portfolio": "https://legopitstop.weebly.com/portfolio.html",
   "bisect,promo,25": "https://bisecthosting.com/legopitstop"
