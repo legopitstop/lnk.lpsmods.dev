@@ -1,11 +1,33 @@
+from bs4 import BeautifulSoup
 import json
 import os
 import glob
+import requests
+import chevron
+
+
+def get_meta(url) -> dict:
+    meta = {}
+    res = requests.get(url)
+    if res.status_code != 200:
+        return {}
+    soup = BeautifulSoup(res.text, features="html.parser")
+    metas = soup.find_all("meta")
+    for m in metas:
+        if m.get("name") == "description":
+            meta["description"] = m.get("content")
+    title = soup.find("title")
+    meta["title"] = title.text
+    return meta
+
 
 os.makedirs("dist", exist_ok=True)
 
 for file in glob.glob("dist/*"):
     os.remove(file)
+
+with open("template.html") as fd:
+    template = fd.read()
 
 with open("redirects.json") as fd:
     data = json.load(fd)
@@ -13,8 +35,19 @@ with open("redirects.json") as fd:
         re.write(json.dumps(data))
 
     for names, url in data.items():
+        meta = get_meta(url)
+        title = str(meta.get("title", "Redirecting...")).strip()
+        desc = str(meta.get("description", "")).strip()
         for name in names.split(","):
-            with open(f"dist/{ name }.html", "w") as html:
+            print("-", name + ".html")
+            with open(f"dist/{ name }.html", "w", encoding="utf-8") as html:
+                content = chevron.render(
+                    template, {"title": title, "desc": desc, "url": url}
+                )
+                soup = BeautifulSoup(content, "html.parser")
                 html.write(
-                    f'<!DOCTYPE html><html lang="en-US"><head><title>Redirecting...</title><meta name="robots" content="noindex"><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="{ url }" /><meta http-equiv="refresh" content="0;url={ url }" /><script>location="{ url }"</script></head><body> <h1>Redirecting&hellip;</h1><a href="{ url }">Click here if you are not redirected.</a></body></html>'
+                    soup.prettify()
+                    .replace("\n ", "")
+                    .replace("\n", "")
+                    .replace("  ", "")
                 )
