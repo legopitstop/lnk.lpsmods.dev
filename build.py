@@ -1,11 +1,21 @@
 from bs4 import BeautifulSoup
+from functools import partial
+import multiprocessing
+import shutil
 import json
 import os
-import glob
 import requests
 import chevron
 
+try:
+    import dotenv  # python-dotenv
 
+    dotenv.load_dotenv()
+except ImportError:
+    ...
+
+
+# Scrape URL for metadata
 def get_meta(url) -> dict:
     meta = {}
     res = requests.get(url)
@@ -21,33 +31,81 @@ def get_meta(url) -> dict:
     return meta
 
 
-os.makedirs("dist", exist_ok=True)
+def get_mods(game_id, author_id):
+    r = requests.get(
+        "https://api.curseforge.com/v1/mods/search",
+        params={"gameId": game_id, "authorId": author_id},
+        headers={"Accept": "application/json", "x-api-key": os.getenv("CURSE_KEY")},
+    )
+    return r.json()["data"]
 
-for file in glob.glob("dist/*"):
-    os.remove(file)
 
-with open("template.html") as fd:
-    template = fd.read()
+def create(template, name, url):
+    meta = get_meta(url)
+    title = str(meta.get("title", "Redirecting...")).strip()
+    desc = str(meta.get("description", "")).strip()
+    print("-", name + ".html")
+    with open(f"dist/{ name }.html", "w", encoding="utf-8") as html:
+        content = chevron.render(template, {"title": title, "desc": desc, "url": url})
+        soup = BeautifulSoup(content, "html.parser")
+        html.write(
+            soup.prettify().replace("\n ", "").replace("\n", "").replace("  ", "")
+        )
 
-with open("redirects.json") as fd:
-    data = json.load(fd)
-    with open("dist/redirects.json", "w") as re:
-        re.write(json.dumps(data))
 
-    for names, url in data.items():
-        meta = get_meta(url)
-        title = str(meta.get("title", "Redirecting...")).strip()
-        desc = str(meta.get("description", "")).strip()
+def main():
+    # Delete dist
+    if os.path.exists("dist"):
+        shutil.rmtree("dist")
+
+    # Copy source folder to dist
+    shutil.copytree("src", "dist")
+
+    # Load template
+    with open("template.html") as fd:
+        template = fd.read()
+
+    # Load redirects
+    with open("redirects.json") as fd:
+        data = json.load(fd)
+
+    # Curseforge redirects
+    # TODO: Fetch all when count < total
+    if "curseforge" in data:
+        author_id = data["curseforge"]
+        for project in get_mods(432, author_id):
+            data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
+        for project in get_mods(78022, author_id):
+            data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
+
+    # Modrinth redirects
+    if "modrinth" in data:
+        author = data["modrinth"]
+        r = requests.get(f"https://api.modrinth.com/v2/user/{author}/projects")
+        if r.status_code == 200:
+            for project in r.json():
+                project_type = project["project_type"]
+                slug = project["slug"]
+                data["redirects"][str(project["id"])] = (
+                    f"https://modrinth.com/{ project_type }/{ slug }"
+                )
+
+    # Split names
+    redirects = {}
+    for names, target in data["redirects"].items():
         for name in names.split(","):
-            print("-", name + ".html")
-            with open(f"dist/{ name }.html", "w", encoding="utf-8") as html:
-                content = chevron.render(
-                    template, {"title": title, "desc": desc, "url": url}
-                )
-                soup = BeautifulSoup(content, "html.parser")
-                html.write(
-                    soup.prettify()
-                    .replace("\n ", "")
-                    .replace("\n", "")
-                    .replace("  ", "")
-                )
+            redirects[str(name)] = str(target)
+
+    # Create copy of redirects for dist
+    with open("dist/redirects.json", "w") as re:
+        lst = []
+        for name, target in redirects.items():
+            lst.append({'name': name, 'target': target})
+        re.write(json.dumps(lst, indent=4))
+
+    with multiprocessing.Pool() as p:
+        p.starmap(partial(create, template), redirects.items())
+
+
+if __name__ == "__main__":
+    main()
