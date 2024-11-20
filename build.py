@@ -6,6 +6,7 @@ import json
 import os
 import requests
 import chevron
+import logging
 
 try:
     import dotenv  # python-dotenv
@@ -37,6 +38,10 @@ def get_mods(game_id, author_id):
         params={"gameId": game_id, "authorId": author_id},
         headers={"Accept": "application/json", "x-api-key": os.getenv("CURSE_KEY")},
     )
+    if r.status_code != 200:
+        logging.warning('Failed to get Curseforge mods: %s', r.text)
+        exit(1)
+        return []
     return r.json()["data"]
 
 
@@ -89,6 +94,9 @@ def main():
                 data["redirects"][str(project["id"])] = (
                     f"https://modrinth.com/{ project_type }/{ slug }"
                 )
+        else:
+            logging.warning("Failed to get Modrinth mods: %s", r.text)
+            exit(1)
 
     # Split names
     redirects = {}
