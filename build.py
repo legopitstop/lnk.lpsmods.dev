@@ -33,6 +33,7 @@ def get_meta(url) -> dict:
 
 
 def get_mods(game_id, author_id):
+    # https://console.curseforge.com/#/api-keys
     r = requests.get(
         "https://api.curseforge.com/v1/mods/search",
         params={"gameId": game_id, "authorId": author_id},
