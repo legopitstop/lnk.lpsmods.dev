@@ -1,10 +1,11 @@
 from bs4 import BeautifulSoup
 from functools import partial
+from requests import Session
+from requests_cache import CachedSession
 import multiprocessing
 import shutil
 import json
 import os
-import requests
 import chevron
 import logging
 
@@ -15,11 +16,19 @@ try:
 except ImportError:
     ...
 
+session = Session()
+cached = CachedSession(".cache/http_cache.sqlite3")
+
 
 # Scrape URL for metadata
 def get_meta(url) -> dict:
     meta = {}
-    res = requests.get(url)
+    res = cached.get(
+        url,
+        headers={
+            "User-Agent": "python-requests/2.31.0",
+        },
+    )
     if res.status_code != 200:
         return {}
     soup = BeautifulSoup(res.text, features="html.parser")
@@ -32,18 +41,35 @@ def get_meta(url) -> dict:
     return meta
 
 
-def get_mods(game_id, author_id):
+def search_mods(game_id, author_id, index):
     # https://console.curseforge.com/#/api-keys
-    r = requests.get(
+    r = session.get(
         "https://api.curseforge.com/v1/mods/search",
-        params={"gameId": game_id, "authorId": author_id},
-        headers={"Accept": "application/json", "x-api-key": os.getenv("CURSE_KEY")},
+        params={"gameId": game_id, "authorId": author_id, "index": index},
+        headers={
+            "User-Agent": "python-requests/2.31.0",
+            "Accept": "application/json",
+            "x-api-key": os.getenv("CURSE_KEY"),
+        },
     )
     if r.status_code != 200:
-        logging.warning('Failed to get Curseforge mods: %s %s', r.status_code, r.text)
+        logging.warning("Failed to get Curseforge mods: %s %s", r.status_code, r.text)
         exit(1)
-        return []
-    return r.json()["data"]
+        return None
+    return r.json()
+
+
+def get_mods(game_id, author_id):
+    index = 0
+    mods = []
+    while True:
+        data = search_mods(game_id, author_id, index)
+        mods.extend(data["data"])
+        if len(data["data"]) < 50:
+            break
+        index += 50
+
+    return mods
 
 
 def create(template, name, url):
@@ -81,20 +107,25 @@ def main():
         author_id = data["curseforge"]
         for project in get_mods(432, author_id):
             data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
-        for project in get_mods(78022, author_id):
-            data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
+        # for project in get_mods(78022, author_id):
+        #     data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
 
     # Modrinth redirects
     if "modrinth" in data:
         author = data["modrinth"]
-        r = requests.get(f"https://api.modrinth.com/v2/user/{author}/projects")
+        r = session.get(
+            f"https://api.modrinth.com/v2/user/{author}/projects",
+            headers={
+                "User-Agent": "python-requests/2.31.0",
+            },
+        )
         if r.status_code == 200:
             for project in r.json():
                 project_type = project["project_type"]
                 slug = project["slug"]
-                data["redirects"][str(project["id"])] = (
-                    f"https://modrinth.com/{ project_type }/{ slug }"
-                )
+                data["redirects"][
+                    str(project["id"])
+                ] = f"https://modrinth.com/{ project_type }/{ slug }"
         else:
             logging.warning("Failed to get Modrinth mods: %s %s", r.status_code, r.text)
             exit(1)
@@ -109,7 +140,7 @@ def main():
     with open("dist/redirects.json", "w") as re:
         lst = []
         for name, target in redirects.items():
-            lst.append({'name': name, 'target': target})
+            lst.append({"name": name, "target": target})
         re.write(json.dumps(lst, indent=4))
 
     with multiprocessing.Pool() as p:
