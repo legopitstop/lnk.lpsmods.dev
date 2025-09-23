@@ -29,7 +29,7 @@ def get_meta(url) -> dict:
             "User-Agent": "python-requests/2.31.0",
         },
     )
-    if res.status_code != 200:
+    if res.status_code not in [200, 400]:
         return {}
     soup = BeautifulSoup(res.text, features="html.parser")
     metas = soup.find_all("meta")
@@ -37,11 +37,12 @@ def get_meta(url) -> dict:
         if m.get("name") == "description":
             meta["description"] = m.get("content")
     title = soup.find("title")
-    meta["title"] = title.text
+    if title:
+        meta["title"] = title.text
     return meta
 
 
-def search_mods(game_id, author_id, index):
+def search_curse_mods(game_id, author_id, index):
     # https://console.curseforge.com/#/api-keys
     r = session.get(
         "https://api.curseforge.com/v1/mods/search",
@@ -59,17 +60,26 @@ def search_mods(game_id, author_id, index):
     return r.json()
 
 
-def get_mods(game_id, author_id):
+def get_curse_mods(game_id, author_id):
     index = 0
     mods = []
     while True:
-        data = search_mods(game_id, author_id, index)
+        data = search_curse_mods(game_id, author_id, index)
         mods.extend(data["data"])
         if len(data["data"]) < 50:
             break
         index += 50
 
     return mods
+
+
+def get_rinth_mods(user_slug):
+    r = session.get(f"https://api.modrinth.com/v2/user/{user_slug}/projects")
+    if r.status_code != 200:
+        logging.warning("Failed to get Modrinth mods: %s %s", r.status_code, r.text)
+        exit(1)
+        return None
+    return r.json()
 
 
 def create(template, name, url):
@@ -105,30 +115,19 @@ def main():
     # TODO: Fetch all when count < total
     if "curseforge" in data:
         author_id = data["curseforge"]
-        for project in get_mods(432, author_id):
+        for project in get_curse_mods(432, author_id):
             data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
-        # for project in get_mods(78022, author_id):
-        #     data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
+
+        for project in get_curse_mods(78022, author_id):
+            data["redirects"][str(project["id"])] = project["links"]["websiteUrl"]
 
     # Modrinth redirects
     if "modrinth" in data:
-        author = data["modrinth"]
-        r = session.get(
-            f"https://api.modrinth.com/v2/user/{author}/projects",
-            headers={
-                "User-Agent": "python-requests/2.31.0",
-            },
-        )
-        if r.status_code == 200:
-            for project in r.json():
-                project_type = project["project_type"]
-                slug = project["slug"]
-                data["redirects"][
-                    str(project["id"])
-                ] = f"https://modrinth.com/{ project_type }/{ slug }"
-        else:
-            logging.warning("Failed to get Modrinth mods: %s %s", r.status_code, r.text)
-            exit(1)
+        for project in get_rinth_mods(data["modrinth"]):
+            slug = str(project["slug"])
+            data["redirects"][
+                slug
+            ] = f"https://modrinth.com/{ project['project_type'] }/{ slug }"
 
     # Split names
     redirects = {}
@@ -141,7 +140,7 @@ def main():
         lst = []
         for name, target in redirects.items():
             lst.append({"name": name, "target": target})
-        re.write(json.dumps(lst, indent=4))
+        re.write(json.dumps(lst, separators=(",", ":")))
 
     with multiprocessing.Pool() as p:
         p.starmap(partial(create, template), redirects.items())
