@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html data-destination="{{ url }}">
+
+<head>
+  <title>{{ title }}</title>
+  <meta name="robots" content="noindex" />
+  <meta charset="utf-8" />
+  <link rel="canonical" href="{{ url }}" />
+
+  <meta name="title" content="{{ title }}" />
+  <meta name="description" content="{{ description }}" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{{ title }}" />
+  <meta property="og:url" content="{{ url }}" />
+  <meta property="og:description" content="{{ description }}" />
+
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="{{ url }}" />
+  <meta property="twitter:title" content="{{ title }}" />
+  <meta property="twitter:description" content="{{ description }}" />
+
+  {{#image}}
+  <meta property="og:image" content="{{ image }}" />
+  <meta property="twitter:image" content="{{ image }}" />
+  {{/image}}
+
+  <noscript>
+    <meta id="redirect" http-equiv="refresh" content="0; url={{ url }}" />
+  </noscript>
+</head>
+
+<body>
+  <script>
+    function redirect() {
+      var destination =
+        document.documentElement.getAttribute("data-destination");
+      window.location.href =
+        destination +
+        (window.location.search || "") +
+        (window.location.hash || "");
+    }
+    function main() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const canRedirect = urlParams.get("redirect") || true;
+      if (["false", 'no', '0'].includes(canRedirect) || !canRedirect)
+        return;
+      redirect();
+    }
+    main();
+  </script>
+  <h1>Redirecting...</h1>
+  <a href="{{ url }}">Click here if you are not redirected.</a>
+</body>
+
+</html>

@@ -42,7 +42,16 @@
     "framework,549225": "https://www.curseforge.com/minecraft/mc-mods/framework",
     "armor-poser,450663": "https://www.curseforge.com/minecraft/mc-mods/armor-poser",
     "free-minecoins,minecoins": "https://www.youtube.com/watch?v=xvFZjo5PgG0",
-    "mc-utils": "https://docs.lpsmods.dev/@lpsmods/mc-utils",
-    "mcaddon-bridge": "https://docs.lpsmods.dev/@lpsmods/mcaddon-bridge"
+    "mc-utils,@lpsmods/mc-utils": "https://docs.lpsmods.dev/@lpsmods/mc-utils",
+    "mcaddon-bridge,@lpsmods/mcaddon-bridge": "https://docs.lpsmods.dev/@lpsmods/mcaddon-bridge",
+    "minecraft-common,@minecraft/common": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/common/minecraft-common",
+    "minecraft-debug-utilities,@minecraft/debug-utilities": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/debug-utilities/minecraft-debug-utilities",
+    "minecraft-diagnostics,@minecraft/diagnostics": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/diagnostics/minecraft-diagnostics",
+    "minecraft-server,@minecraft/server": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server/minecraft-server",
+    "minecraft-server-admin,@minecraft/server-admin": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-admin/minecraft-server-admin",
+    "minecraft-server-editor,@minecraft/server-editor": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-editor/minecraft-server-editor",
+    "minecraft-server-gametest,@minecraft/server-gametest": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-gametest/minecraft-server-gametest",
+    "minecraft-server-net,@minecraft/server-net": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-net/minecraft-server-net",
+    "minecraft-server-ui,@minecraft/server-ui": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-ui/minecraft-server-ui"
   }
 }

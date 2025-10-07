@@ -2,6 +2,9 @@ from bs4 import BeautifulSoup
 from functools import partial
 from requests import Session
 from requests_cache import CachedSession
+from typing import Optional, Dict, Any
+from pydantic import BaseModel
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode, urljoin
 import multiprocessing
 import shutil
 import json
@@ -20,26 +23,61 @@ session = Session()
 cached = CachedSession(".cache/http_cache.sqlite3")
 
 
-# Scrape URL for metadata
-def get_meta(url) -> dict:
-    meta = {}
+class Meta(BaseModel):
+    url: str
+    title: Optional[str] = "Redirecting..."
+    description: Optional[str] = None
+    image: Optional[str] = None
+
+def is_rel_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return not parsed.scheme and not parsed.netloc
+
+def add_query_params(url: str, new_params: Dict[str, Any]):
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    query.update(new_params)
+    new_query = urlencode(query, doseq=True)
+    return urlunparse(parsed._replace(query=new_query))
+
+
+def get_meta(url: str, id: str) -> Meta:
+    """
+    Scrape URL for metadata
+
+    :param url: The URL to scrape
+    :type url: str
+    :param id: The name of redirect id
+    :type id: str
+    :return: The resulting metadata
+    :rtype: dict
+    """
+    url = add_query_params(url, {"ref": "lpsmods.dev"})
+    meta = {"url": url, "id": id}
     res = cached.get(
         url,
         headers={
             "User-Agent": "python-requests/2.31.0",
         },
     )
-    if res.status_code not in [200, 400]:
-        return {}
+    if res.status_code != 200:
+        return Meta(url=url)
     soup = BeautifulSoup(res.text, features="html.parser")
     metas = soup.find_all("meta")
     for m in metas:
         if m.get("name") == "description":
             meta["description"] = m.get("content")
+        if m.get("property") == "og:image":
+            image_url = m.get("content")
+            if is_rel_url(image_url):
+                parsed = urlparse(url)
+                meta["image"] =  urljoin(parsed.netloc, image_url)
+            else:
+                meta["image"] = image_url
     title = soup.find("title")
     if title:
         meta["title"] = title.text
-    return meta
+    return Meta.model_validate(meta)
 
 
 def search_curse_mods(game_id, author_id, index):
@@ -83,12 +121,12 @@ def get_rinth_mods(user_slug):
 
 
 def create(template, name, url):
-    meta = get_meta(url)
-    title = str(meta.get("title", "Redirecting...")).strip()
-    desc = str(meta.get("description", "")).strip()
+    meta = get_meta(url, name)
     print("-", name + ".html")
-    with open(f"dist/{ name }.html", "w", encoding="utf-8") as html:
-        content = chevron.render(template, {"title": title, "desc": desc, "url": url})
+    fp = f"dist/{ name }.html"
+    os.makedirs(os.path.dirname(fp), exist_ok=True)
+    with open(fp, "w", encoding="utf-8") as html:
+        content = chevron.render(template, meta.model_dump())
         soup = BeautifulSoup(content, "html.parser")
         html.write(
             soup.prettify().replace("\n ", "").replace("\n", "").replace("  ", "")
@@ -104,7 +142,7 @@ def main():
     shutil.copytree("src", "dist")
 
     # Load template
-    with open("template.html") as fd:
+    with open("src/template.html") as fd:
         template = fd.read()
 
     # Load redirects
