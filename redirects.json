@@ -42,6 +42,10 @@
     "framework,549225": "https://www.curseforge.com/minecraft/mc-mods/framework",
     "armor-poser,450663": "https://www.curseforge.com/minecraft/mc-mods/armor-poser",
     "free-minecoins,minecoins": "https://www.youtube.com/watch?v=xvFZjo5PgG0",
+    "mc-common,@lpsmods/mc-common": "https://docs.lpsmods.dev/@lpsmods/mc-common",
+    "mc-dev,@lpsmods/mc-dev": "https://docs.lpsmods.dev/@lpsmods/mc-dev",
+    "mc-mixins,@lpsmods/mc-mixins": "https://docs.lpsmods.dev/@lpsmods/mc-mixins",
+    "mc-superstruct,@lpsmods/mc-superstruct": "https://docs.lpsmods.dev/@lpsmods/mc-superstruct",
     "mc-utils,@lpsmods/mc-utils": "https://docs.lpsmods.dev/@lpsmods/mc-utils",
     "mcaddon-bridge,@lpsmods/mcaddon-bridge": "https://docs.lpsmods.dev/@lpsmods/mcaddon-bridge",
     "minecraft-common,@minecraft/common": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/common/minecraft-common",
@@ -52,6 +56,7 @@
     "minecraft-server-editor,@minecraft/server-editor": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-editor/minecraft-server-editor",
     "minecraft-server-gametest,@minecraft/server-gametest": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-gametest/minecraft-server-gametest",
     "minecraft-server-net,@minecraft/server-net": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-net/minecraft-server-net",
-    "minecraft-server-ui,@minecraft/server-ui": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-ui/minecraft-server-ui"
+    "minecraft-server-ui,@minecraft/server-ui": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-ui/minecraft-server-ui",
+    "minecraft-server-graphics,@minecraft/server-graphics": "https://learn.microsoft.com/minecraft/creator/scriptapi/minecraft/server-graphics/minecraft-server-graphics"
   }
 }
