@@ -29,9 +29,11 @@ class Meta(BaseModel):
     description: Optional[str] = None
     image: Optional[str] = None
 
+
 def is_rel_url(url: str) -> bool:
     parsed = urlparse(url)
     return not parsed.scheme and not parsed.netloc
+
 
 def add_query_params(url: str, new_params: Dict[str, Any]):
     parsed = urlparse(url)
@@ -52,7 +54,7 @@ def get_meta(url: str, id: str) -> Meta:
     :return: The resulting metadata
     :rtype: dict
     """
-    url = add_query_params(url, {"ref": "lpsmods.dev"})
+    url = add_query_params(url, {"utm_source": "lpsmods.dev"})
     meta = {"url": url, "id": id}
     res = cached.get(
         url,
@@ -71,7 +73,7 @@ def get_meta(url: str, id: str) -> Meta:
             image_url = m.get("content")
             if is_rel_url(image_url):
                 parsed = urlparse(url)
-                meta["image"] =  urljoin(parsed.netloc, image_url)
+                meta["image"] = urljoin(parsed.netloc, image_url)
             else:
                 meta["image"] = image_url
     title = soup.find("title")
